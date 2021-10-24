@@ -1,0 +1,35 @@
+#!/bin/sh
+
+#function that queries tor dnsel
+#to check if ip is an exit node
+tor_check(){
+	answer="$1 IS A TOR EXIT NODE"
+	reversed=$(echo "$1" | awk -F . '{print $4"."$3"."$2"."$1}')
+	cmd=$(dig "$reversed.dnsel.torproject.org" | grep "127.0.0.2")
+	if test "${cmd#*'127.0.0.2'}" = "$cmd";then
+		answer=$(printf "${answer}" | sed "s/IS/IS NOT/");fi;
+	printf "$answer\n"
+}
+
+#function to query the freegeoip api and
+#parse json from it
+general(){
+	cmd=$(curl -s -X GET https://freegeoip.app/json/$1)
+	country_code=$(printf "$cmd" | jq -r ".country_code")
+	country_name=$(printf "$cmd" | jq -r ".country_name")
+	region_name=$(printf "$cmd" | jq -r ".region_name")
+	city=$(printf "$cmd" | jq -r ".city")
+	time_zone=$(printf "$cmd" | jq -r ".time_zone")
+	printf "COUNTRY CODE:$country_code\nCOUNTRY NAME:$country_name \
+		\nREGION_NAME:$region_name\nCITY:$city\nTIMEZONE:$time_zone\n"
+}
+
+#checking if ip was provided
+if [ $# -ne 1 ];then
+	printf "usage `basename $1` ip"
+	exit 1
+fi
+
+#calling the functions
+tor_check $1
+general $1
